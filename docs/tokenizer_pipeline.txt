@@ -1,0 +1,10 @@
+Now tokenizer has:
+
+<image>
+
+<locXXXX> → detection 4d
+
+<segXXX> → segmentation 3d
+
+BOS/EOS disabled to avoid duplicated
+
