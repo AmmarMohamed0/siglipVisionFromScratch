@@ -1,0 +1,28 @@
+Image [B, 3, 224, 224]
+    ↓
+Conv2D patch extraction (patching + embedding)
+    ↓
+[B, 768, 14, 14]
+    ↓
+Flatten & Transpose
+    ↓
+[B, 196, 768]
+    ↓
+Add positional embeddings
+    ↓
+[B, 196, 768]
+    ↓
+12 × Encoder Blocks  ← Each block has:
+    │
+    ├─ LayerNorm
+    ├─ Multi-Head Attention (12 heads)
+    ├─ Residual Add
+    ├─ LayerNorm
+    ├─ MLP (FFN)
+    └─ Residual Add
+    ↓
+[B, 196, 768]
+    ↓
+Final LayerNorm
+    ↓
+[B, 196, 768] - Output visual tokens
