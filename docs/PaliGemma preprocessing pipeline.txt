@@ -1,0 +1,95 @@
+Image Processing Pipeline
+INPUT: PIL Image
+
+(1) Resize → (224×224) or (448×448) using BICUBIC resampling
+    ↓
+(2) Convert PIL → numpy array
+    ↓
+(3) Rescale [0, 255] → [0, 1]
+    • Multiply by 1/255.0
+    ↓
+(4) Normalize → mean=0, std=1
+    • Apply: (image - 0.5) / 0.5
+    • Result: [-1, 1] range
+    ↓
+(5) Transpose → [H, W, C]❌ → [C, H, W]✅
+    • Model expects channels first
+    ↓
+(6) Stack batch → [Batch, C, H, W]
+    ↓
+(7) Convert to PyTorch tensor
+
+OUTPUT: torch.Tensor shape [1, 3, size, size]
+_________________________
+Text Processing Pipeline Details
+
+INPUT: "What is in this image?"
+
+(1) Add image tokens prefix
+    • Prepend: "<image>" × 256 times (num_image_tokens)
+    • Add: "<bos>" token
+    • Original text: "What is in this image?"
+    • Append: "\n"
+    
+    Result string:
+    "<image><image>...(256 times)...<image><bos>What is in this image?\n"
+    ↓
+    
+(2) Tokenize → input_ids
+    • "<image>" → [image_token_id] (e.g., 256001)
+    • "<bos>" → [bos_token_id] (e.g., 1)
+    • "What" → [5072]
+    • "is" → [338]
+    • "in" → [297]
+    • ...and so on
+    
+    Result: input_ids = [256001, 256001, ...(256 times), 1, 5072, 338, 297, ...]
+    Shape: [1, seq_len] where seq_len ≈ 256 + 1 + ~10 text tokens
+    ↓
+    
+(3) Create attention_mask
+    • 1 = "pay attention to this token"
+    • 0 = "ignore this token" (padding)
+    
+    For actual tokens:
+    attention_mask = [1, 1, 1, 1, ..., 1]
+    
+    If padding added (for batch processing):
+    attention_mask = [1, 1, 1, ..., 1, 0, 0, 0]
+                      ↑ real tokens    ↑ padding
+    
+    Shape: [1, seq_len] (same as input_ids)
+_______________
+Example with Numbers
+
+Input text: "Describe this"
+
+After adding image tokens:
+"<image><image><image><bos>Describe this\n"
+(assuming 3 image tokens for simplicity)
+
+input_ids = [
+    256001,  # <image>
+    256001,  # <image>
+    256001,  # <image>
+    1,       # <bos>
+    5126,    # "Describe"
+    445,     # "this"
+    10,      # "\n"
+]
+Shape: [1, 7]
+
+attention_mask = [
+    1,  # attend to <image>
+    1,  # attend to <image>
+    1,  # attend to <image>
+    1,  # attend to <bos>
+    1,  # attend to "Describe"
+    1,  # attend to "this"
+    1,  # attend to "\n"
+]
+Shape: [1, 7]
+____________________
+input_ids: Numeric representation of each token (including special tokens)
+attention_mask: Binary mask telling the model which tokens to process (1) vs ignore (0)
+Padding: When batching multiple sequences, shorter ones are padded with <pad> tokens (attention_mask = 0 for these)
