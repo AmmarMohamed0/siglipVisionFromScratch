@@ -1,0 +1,43 @@
+INPUT:
+    input_ids [B, T]
+    pixel_values [B, C, H, W]
+
+↓
+
+Text:
+    Embedding → [B, T, H]
+
+Image:
+    Vision Encoder → [B, N, D]
+    Projector → [B, N, H]
+
+↓
+
+Merge:
+    Replace image tokens with image embeddings
+    → [B, T, H]
+
+↓
+
+Decoder (N layers):
+    for each layer:
+        RMSNorm
+        Self-Attention (RoPE + KV cache + GQA)
+        Residual
+        RMSNorm
+        MLP (Gated GELU)
+        Residual
+
+↓
+
+Final Norm
+
+↓
+
+LM Head:
+    Linear → logits [B, T, Vocab]
+
+↓
+
+OUTPUT:
+    logits (+ kv_cache if used)
